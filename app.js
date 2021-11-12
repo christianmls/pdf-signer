@@ -5,6 +5,7 @@ const Validation = require('./api/config/validation');
 
 const PORT = process.env.PORT || 8080;
 
+app.use(express.json());
 app.use('/pdf', PDFRoutes);
 
 Validation.validateRequirements();

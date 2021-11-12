@@ -4,7 +4,7 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
+    "start": "PRIVATE_KEY_FILE_PATH='./keys/private.pem' PUBLIC_KEY_FILE_PATH='./keys/public.pub' node app.js",
     "test": "PRIVATE_KEY_FILE_PATH=./test/keys/private.pem ./node_modules/.bin/mocha --timeout 10000 --recursive"
   },
   "author": "",
