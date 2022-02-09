@@ -4,13 +4,15 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "start": "PRIVATE_KEY_FILE_PATH='./keys/private.pem' PUBLIC_KEY_FILE_PATH='./keys/public.pub' node app.js",
-    "test": "PRIVATE_KEY_FILE_PATH=./test/keys/private.pem ./node_modules/.bin/mocha --timeout 10000 --recursive"
+    "start": "node app.js",
+    "test": "./node_modules/.bin/mocha --timeout 10000 --recursive"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "dotenv": "^16.0.0",
     "express": "^4.16.4",
+    "pdf-lib": "^1.17.1",
     "uuid": "^3.3.2"
   },
   "devDependencies": {
