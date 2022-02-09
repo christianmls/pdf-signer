@@ -10,7 +10,6 @@ const VERIFIER_JAR = path.join(__dirname, '../../', 'jsignpdf', 'Verifier.jar');
 
 const sign = async ( pdf, p12, password ) => {
     const PRIVATE_KEY = await fs.readFile(process.env.PRIVATE_KEY_FILE_PATH);
-    const PUBLIC_KEY = await fs.readFile(process.env.PUBLIC_KEY_FILE_PATH);
 
     RequestValidator.isNotNull('pdf', pdf);
     RequestValidator.isNotNull('p12', p12);
@@ -23,12 +22,17 @@ const sign = async ( pdf, p12, password ) => {
 
 
     try {
-        await spawnSync('mkdir', [ tmpPdfFolder ]);
+        const resultMkdir = await spawnSync('mkdir', [ tmpPdfFolder ]);
+        const decryptedPassword = '2020KyndoPin!'; //Crypto.decrypt(password, PRIVATE_KEY);
 
-	const decryptedPassword = Crypto.decrypt(password, PRIVATE_KEY);
-        const pdfResult = await fs.writeFile(pdfFileName, pdf, {encoding: 'base64'});
-        const p12Result = await fs.writeFile(p12Filename, p12, {encoding: 'base64'});
+	console.log('mkdir', resultMkdir);
 
+        const await fs.writeFile(pdfFileName, 'pdf');
+        const p12Result = await fs.writeFile(p12Filename, 'p12');
+
+	console.log('CERT:', PRIVATE_KEY);
+        console.log('PDF: ', pdfResult);
+        console.log('P12: ', p12Result);
 
         const options = [
             '-jar',
@@ -46,33 +50,29 @@ const sign = async ( pdf, p12, password ) => {
             'DISALLOW_PRINTING',
             '--ocsp',
             '--crl',
-            '--reason',
-            ' ',
-            '--location',
-            ' ',
             '-d',
             tmpPdfFolder,
             pdfFileName
         ];
 
 
-        const child = spawnSync('java', options);
-        const { error, stderr, stdout } = child;
+        //const child = spawnSync('java', options);
+        //const { error, stderr, stdout } = child;
 
-        if(error) {
-            throw error;
-        } else if(stderr.toString('utf8').length > 0) {
-            throw new Error(stderr.toString('utf8'));
-        }
+        //if(error) {
+        //    throw error;
+        //} else if(stderr.toString('utf8').length > 0) {
+        //    throw new Error(stderr.toString('utf8'));
+        //}
 
-        const signedPdf = fs.readFile(pdfSignedFileName);
+        const signedPdf = 'PDF'; //fs.readFileSync(pdfSignedFileName);
 
         return signedPdf;
     } catch(err) {
         throw err;
     } finally {
 	console.log('Finalizado');
-        await spawnSync('rm', [ '-rf', tmpPdfFolder ]);
+        //await spawnSync('rm', [ '-rf', tmpPdfFolder ]);
     }
 }
 

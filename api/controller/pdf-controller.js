@@ -10,6 +10,7 @@ const sign = async (req, res, next) => {
         const p12 = req.body.p12;
         const password = req.body.password;
         const signedPDF = await service.sign(pdf, p12, password);
+
         res.setHeader('Content-Length', signedPDF.length);
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', 'attachment; filename=' + filename + '.pdf');

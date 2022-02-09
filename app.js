@@ -5,7 +5,8 @@ const Validation = require('./api/config/validation');
 
 const PORT = process.env.PORT || 8080;
 
-app.use(express.json());
+app.use(express.json({limit: '50mb'}));
+
 app.use('/pdf', PDFRoutes);
 
 Validation.validateRequirements();
