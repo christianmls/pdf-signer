@@ -5,6 +5,8 @@ const { spawnSync} = require('child_process');
 const Crypto = require('../util/crypto');
 const RequestValidator = require('../util/request-validator');
 const { degrees, PDFDocument, rgb, StandardFonts } = require('pdf-lib');
+const Canvas = require('canvas');
+const QRCode = require('qrcode');
 
 const SIGNER_JAR = path.join(__dirname, '../../', 'jsignpdf', 'JSignPdf.jar');
 const VERIFIER_JAR = path.join(__dirname, '../../', 'jsignpdf', 'Verifier.jar');
@@ -114,25 +116,87 @@ const verify = async (pdf) => {
 const firmaQr = async (pdf, page, x, y) => {
     const pdfDoc = await PDFDocument.load(pdf);
     const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const firmaWidth = 450;
+    const firmaHeight = 150;
 
     const pages = pdfDoc.getPages();
-    const firstPage = pages[page];
-    const { width, height } = firstPage.getSize();
+    const contentPage = pages[page];
+    const { width, height } = contentPage.getSize();
 
-    print(pdf);
+    const canvasObj = Canvas.createCanvas(firmaWidth, firmaHeight);
+    const context = canvasObj.getContext('2d');
+    const imgQr = new Canvas.Image;
+    
+    // Registrar Fuentes
+    Canvas.registerFont('cour.ttf', { family: 'Comic Sans' })
+    Canvas.registerFont('courbd.ttf', { family: 'Comic Sans' })
 
-    firstPage.drawText('This text was added with JavaScript!', {
-        x: 5,
-        y: height / 2 + 300,
-        size: 50,
-        font: helveticaFont,
-        color: rgb(0.95, 0.1, 0.1),
-        rotate: degrees(-45),
-    });
+    // Crear el cuadro
+    context.fillStyle = 'yellow';
+    context.fillRect(0, 0, firmaWidth, firmaHeight);
+
+    // Generar el QR
+    const qr = await QRCode.toDataURL('I am a pony!', {width: firmaHeight, errorCorrectionLevel: 'L'});
+    imgQr.src = qr;
+
+    // Agregar el QR
+    context.drawImage(imgQr, 0, 0);
+
+    // Agregar texto
+    context.fillStyle = '#000';
+    context.font = '12px "Liberation Mono"';
+    context.textAlign = 'left';
+    context.fillText('Firmado electrónicamente por:', firmaHeight + 2, 30);
+
+    // Nombre en multiline
+    context.font = '20px "Liberation Serif"';
+    wrapText(context, 'MARIA JOSE LINCANGO GALLEGOS', firmaHeight + 2, 53, 140, 21);
+
+    const buffer = canvasObj.toBuffer('image/png');
+
+    const pngImage = await pdfDoc.embedPng(buffer);
+    const pngDims = pngImage.scale(0.5)
+
+    console.log(pages, width, height);
+
+    contentPage.drawImage(pngImage, {
+        x: contentPage.getWidth() / 2 - pngDims.width / 2 + 75,
+        y: contentPage.getHeight() / 2 - pngDims.height + 250,
+        width: pngDims.width,
+        height: pngDims.height,
+    })
 
     return await pdfDoc.save();
 }
 
+function wrapText(context, text, x, y, line_width, line_height){
+    var line = '';
+    var paragraphs = text.split('\n');
+    for (var i = 0; i < paragraphs.length; i++)
+    {
+        var words = paragraphs[i].split(' ');
+        for (var n = 0; n < words.length; n++)
+        {
+            var testLine = line + words[n] + ' ';
+            var metrics = context.measureText(testLine);
+            var testWidth = metrics.width;
+            if (testWidth > line_width && n > 0)
+            {
+                context.fillText(line, x, y);
+                line = words[n] + ' ';
+                y += line_height;
+            }
+            else
+            {
+                line = testLine;
+            }
+        }
+        context.fillText(line, x, y);
+        y += line_height;
+        line = '';
+    }
+}
+    
 module.exports = {
     sign,
     verify

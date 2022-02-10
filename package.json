@@ -10,9 +10,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "canvas": "^2.9.0",
     "dotenv": "^16.0.0",
     "express": "^4.16.4",
     "pdf-lib": "^1.17.1",
+    "qrcode": "^1.5.0",
     "uuid": "^3.3.2"
   },
   "devDependencies": {
