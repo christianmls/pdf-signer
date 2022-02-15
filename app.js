@@ -4,7 +4,7 @@ const app = express();
 const PDFRoutes = require('./api/route/pdf-routes');
 const Validation = require('./api/config/validation');
 
-const result = dotenv.config()
+const result = dotenv.config({path: __dirname + '/.env'})
 const PORT = process.env.PORT || 8080;
 
 console.log('Resultado:', result);
