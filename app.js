@@ -4,9 +4,9 @@ const app = express();
 const PDFRoutes = require('./api/route/pdf-routes');
 const Validation = require('./api/config/validation');
 
+const result = dotenv.config()
 const PORT = process.env.PORT || 8080;
 
-const result = dotenv.config()
 console.log('Resultado:', result);
 
 app.use(express.json({limit: '50mb'}));
