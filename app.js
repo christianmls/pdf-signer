@@ -16,7 +16,7 @@ app.use(basicAuth({
 }))
 
 app.use(function (req, res, next) {
-  console.log('hostname:', req.hostname);
+  console.log('hostname:', req);
   next();
 });
 
