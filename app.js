@@ -15,6 +15,11 @@ app.use(basicAuth({
   users: { 'compraspublicas': 'GFWHhYWC8GRmRy2FDcP4eyLqk9hAFB', 'nicec': 'JSAgkQHsLcQyLS2cQnZ8XAjYYQ7SU5' }
 }))
 
+app.use(function (req, res, next) {
+  console.log('hostname:', req.hostname);
+  next();
+});
+
 app.use(express.json({limit: '50mb'}));
 app.use('/pdf', PDFRoutes);
 
