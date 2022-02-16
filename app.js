@@ -1,13 +1,19 @@
 const dotenv = require('dotenv');
 const express = require('express');
-const app = express();
+const basicAuth = require('express-basic-auth');
+
 const PDFRoutes = require('./api/route/pdf-routes');
 const Validation = require('./api/config/validation');
+const app = express();
 
 const result = dotenv.config({path: __dirname + '/.env'})
 const PORT = process.env.PORT || 8080;
 
 console.log('Resultado:', result);
+
+app.use(basicAuth({
+  users: { 'compraspublicas': 'GFWHhYWC8GRmRy2FDcP4eyLqk9hAFB', 'nicec': 'JSAgkQHsLcQyLS2cQnZ8XAjYYQ7SU5' }
+}))
 
 app.use(express.json({limit: '50mb'}));
 app.use('/pdf', PDFRoutes);
