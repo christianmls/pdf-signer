@@ -34,6 +34,9 @@ const sign = async ( pdf, p12, password, pag, posX, posY ) => {
 	    const decryptedPassword = Crypto.decrypt(password, PRIVATE_KEY);
         const p12Result = await fs.writeFile(p12Filename, p12, {encoding: 'base64'});
 
+        console.log('Prueba 08/03/202222222222222222222222222222222');
+        console.log(decryptedPassword);
+
         //Leer firma
         const pem = await PfxToPem.toPem({
             path: p12Filename,
@@ -46,10 +49,10 @@ const sign = async ( pdf, p12, password, pag, posX, posY ) => {
             const nombre = (cert.givenName) ? cert.givenName + ' ' + cert.surname : cert.commonName;
             const isodate = new Date(Date.now()).toISOString()
 
-            console.log('certificado:', pem.attributes);
-            console.log('certificado:', pem.attributes.subject); 
-            console.log('certificado:', pem.attributes.notAfter);
-            console.log('certificado nombre:', nombre);
+            //console.log('certificado:', pem.attributes);
+            //console.log('certificado:', pem.attributes.subject); 
+            //console.log('certificado:', pem.attributes.notAfter);
+            //console.log('certificado nombre:', nombre);
 
             // X,Y 0,0 borde inferior izquierdo de la página
             pdf = await firmaQr(pdf, pag, posX, posY, nombre, isodate);
@@ -96,9 +99,11 @@ const sign = async ( pdf, p12, password, pag, posX, posY ) => {
 
         return signedPdf;
     } catch(err) {
+        console.log('Error al firmar:');
+        console.log(err);
         throw err;
     } finally {
-	console.log('Finalizado');
+	    console.log('Finalizado');
         await spawnSync('rm', [ '-rf', tmpPdfFolder ]);
     }
 }
