@@ -95,6 +95,7 @@ const sign = async ( pdf, p12, password, pag, posX, posY ) => {
             throw new Error(stderr.toString('utf8'));
         }
 
+        console.log('Sin errores 08/03/202222222222222222222222222222222');
         const signedPdf = fs.readFile(pdfSignedFileName);
 
         return signedPdf;
