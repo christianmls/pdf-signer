@@ -5,10 +5,15 @@ const { spawnSync} = require('child_process');
 const Crypto = require('../util/crypto');
 const RequestValidator = require('../util/request-validator');
 const { degrees, PDFDocument, rgb, StandardFonts } = require('pdf-lib');
+const PDFLib = require('pdf-lib');
+const HummusRecipe = require('hummus-recipe');
 const Canvas = require('canvas');
 const QRCode = require('qrcode');
 const PfxToPem = require('pfx-to-pem');
+const QrAppereance = require('./qr-appereance');
+const { format } = require('date-fns');
 
+const SIGNER_HOME = path.join(__dirname, '../../', 'jsignpdf', 'conf', 'conf.properties');
 const SIGNER_JAR = path.join(__dirname, '../../', 'jsignpdf', 'JSignPdf.jar');
 const VERIFIER_JAR = path.join(__dirname, '../../', 'jsignpdf', 'Verifier.jar');
 
@@ -34,7 +39,7 @@ const sign = async ( pdf, p12, password, pag, posX, posY ) => {
 	    const decryptedPassword = Crypto.decrypt(password, PRIVATE_KEY);
         const p12Result = await fs.writeFile(p12Filename, p12, {encoding: 'base64'});
 
-        console.log('Prueba 08/03/202222222222222222222222222222222');
+        console.log('Prueba 13/07/2023');
         console.log(decryptedPassword);
 
         //Leer firma
@@ -47,7 +52,8 @@ const sign = async ( pdf, p12, password, pag, posX, posY ) => {
             const cert = pem.attributes.subject;
             const date = pem.attributes.notAfter;
             const nombre = (cert.givenName) ? cert.givenName + ' ' + cert.surname : cert.commonName;
-            const isodate = new Date(Date.now()).toISOString()
+            const dateNow = new Date(Date.now())
+            const isodate = format(dateNow, "yyyy-MM-dd'T'HH:mm:ss.SSSSSSxxx");
 
             //console.log('certificado:', pem.attributes);
             //console.log('certificado:', pem.attributes.subject); 
@@ -55,14 +61,18 @@ const sign = async ( pdf, p12, password, pag, posX, posY ) => {
             //console.log('certificado nombre:', nombre);
 
             // X,Y 0,0 borde inferior izquierdo de la página
-            pdf = await firmaQr(pdf, pag, posX, posY, nombre, isodate);
+            pdf = await firmaQr(pdf, nombre, isodate, tmpPdfFolder);
         }
+
+        const imgSign = path.join(tmpPdfFolder, 'signature.png');
     
         const pdfResult = await fs.writeFile(pdfFileName, pdf, {encoding: 'base64'});
 
-        const options = [
+        const options = [                        
             '-jar',
             SIGNER_JAR,
+            '--load-properties-file',
+            SIGNER_HOME,
             '-a',
             '-kst',
             'PKCS12',
@@ -72,22 +82,48 @@ const sign = async ( pdf, p12, password, pag, posX, posY ) => {
             decryptedPassword,
             '-pe',
             'NONE',
-            '-pr',
+            '--print-right',
             'DISALLOW_PRINTING',
+            '-ha',
+            'SHA512',
+            '-cl',
+            'CERTIFIED_NO_CHANGES_ALLOWED',
+            '--bg-path',
+            imgSign,
+            '--bg-scale',
+            '-1',
+            '--page',
+            pag,
+            '-llx',
+            posX,
+            '-lly',
+            posY,
+            '-urx',
+            posX+140,
+            '-ury',
+            posY+50,
+            '--render-mode',
+            'GRAPHIC_AND_DESCRIPTION',
             '--ocsp',
             '--crl',
             '--reason',
             ' ',
             '--location',
             ' ',
-            '-d',
+            '--l2-text',
+            ' ',
+            '--l4-text',
+            ' ',
+            '--out-directory',
             tmpPdfFolder,
-            pdfFileName
+            pdfFileName,
+            '--visible-signature',
+            '--quiet'
         ];
-
 
         const child = spawnSync('java', options);
         const { error, stderr, stdout } = child;
+        
 
         if(error) {
             throw error;
@@ -95,7 +131,7 @@ const sign = async ( pdf, p12, password, pag, posX, posY ) => {
             throw new Error(stderr.toString('utf8'));
         }
 
-        console.log('Sin errores 08/03/202222222222222222222222222222222');
+        console.log('Sin errores 05/07/2023');
         const signedPdf = fs.readFile(pdfSignedFileName);
 
         return signedPdf;
@@ -105,7 +141,7 @@ const sign = async ( pdf, p12, password, pag, posX, posY ) => {
         throw err;
     } finally {
 	    console.log('Finalizado');
-        await spawnSync('rm', [ '-rf', tmpPdfFolder ]);
+        //await spawnSync('rm', [ '-rf', tmpPdfFolder ]);
     }
 }
 
@@ -142,7 +178,18 @@ const verify = async (pdf) => {
     }
 }
 
-const firmaQr = async (pdf, page, posX, posY, name, isodate) => {
+const firmaQr = async (pdf, name, isodate, tmpPdfFolder) => {
+  // Crear una instancia de QrAppereance con los valores deseados
+  const qrAppearance = new QrAppereance(name, '', '', isodate, 'VALIDAR CON: www.firmadigital.gob.ec\n 3.0.2');
+  const signaturePosition = { x: 0, y: 0, width: 280, height: 115 }; // Ejemplo de posición de la firma
+
+  // Crear la apariencia personalizada
+  const image = await qrAppearance.createCustomAppearance(signaturePosition, tmpPdfFolder);
+
+  return pdf;
+}
+
+const firmaQrAnterior = async (pdf, page, posX, posY, name, isodate) => {
     const pdfDoc = await PDFDocument.load(pdf);
     const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const firmaWidth = 400;
@@ -156,7 +203,20 @@ const firmaQr = async (pdf, page, posX, posY, name, isodate) => {
     const context = canvasObj.getContext('2d');
     const imgQr = new Canvas.Image;
 
-    const firma = `FIRMADO POR: ${name}\nRAZON: \nLOCALIZACION: \nFECHA: ${isodate}\nVALIDAR CON: www.firmadigital.gob.ec 2.10.1`;
+    const firma = `FIRMADO POR: ${name}\nRAZON: \nLOCALIZACION: \nFECHA: ${isodate}\nVALIDAR CON: www.firmadigital.gob.ec 3.0.2`;
+
+    const signature = pdfDoc.createSignature();
+
+    signature.setPage(contentPage);
+
+    const signaturePosition = { x: 100, y: 100, width: 200, height: 100 };
+    signature.setPosition(signaturePosition.x, signaturePosition.y);
+    signature.setSize(signaturePosition.width, signaturePosition.height);
+    
+    signature.setSignerName('John Doe'); // Nombre del firmante
+    signature.setReason('Firma de documento'); // Razón de la firma
+    
+    pdfDoc.addSignature(signature);
     
     // Registrar Fuentes
     Canvas.registerFont('fonts/cour.ttf', { family: 'Courier New' })
